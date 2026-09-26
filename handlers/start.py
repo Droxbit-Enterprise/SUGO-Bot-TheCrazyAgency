@@ -29,7 +29,9 @@ async def start(message: Message, state: FSMContext):
             es_mayor=0,
             tiene_wifi=0,
             tiene_tiempo=0,
-            registrada=0
+            registrada=0,
+            inicio_sesion=0,
+            apellido="",
         )
         user = get_user(message.from_user.id)
         print("Usuaria creada:", user)
@@ -221,7 +223,8 @@ async def confirmar_disponibilidad(message: Message, state: FSMContext):
         user = get_user(message.from_user.id)
         await message.answer(
             "Perfecto señorita 💎💸\n"
-            "Ya cumples los requisitos minimos para empezar a trabajar con *The Crazy Agency* 💛\n\n"           
+            "Ya cumples los requisitos minimos para empezar a trabajar con *The Crazy Agency* 💛\n\n",
+            reply_markup=ReplyKeyboardRemove()           
         )
         if user[11] == 0: 
             await typing(message, 2)

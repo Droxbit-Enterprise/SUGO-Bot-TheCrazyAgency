@@ -160,11 +160,19 @@ async def validar_registro_api(message: Message, state: FSMContext):
     # token = api_json.get("token")
     # if token:
     #     update_user_field(message.from_user.id, "token", token)
-
+    
+    await bot.send_message(
+        GROUP_ID,
+        f"💎 *Nueva chica interesada en generar ingresos* 💸\n"
+        f"👤 @{message.from_user.username}\n"
+        f"🆔 {message.from_user.id}\n\n"
+        f"⚠️ Equipo, estén pendientes: acaba de iniciar el proceso de registro."
+    )
     await typing(message, 1)
     user = get_user(message.from_user.id)
     await message.answer(
         "✨ *Registro completado exitosamente*.\n"
+        "En cualquier momento puedes inciar sesion en nuestro sitio web:\nhttps://thecrazyagency.com/usuarias/iniciar-sesion/\n\n"
         "Ahora elige la app con la que deseas trabajar 💛",
         reply_markup=menu_principal(user)
     )

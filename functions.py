@@ -29,6 +29,7 @@ COUNTRY_CHOICES = [
     ('pry', '🇵🇷 - Puerto Rico'),
     ('uru', '🇺🇾 - Uruguay'),
 ]
+
 def obtener_codigo_pais(texto_pais: str):
     for code, label in COUNTRY_CHOICES:
         if texto_pais.strip() == label:
@@ -56,7 +57,7 @@ def menu_principal(user):
     # Si NO tiene apps asociadas → mostrar menú para asociar
     if len(apps_asociadas) == 0:
         for app in apps_no_asociadas:
-            kb.button(text=f"Asociar {app}")
+            kb.button(text=f"Generar 💸 en {app}")
         kb.button(text="Tengo una duda")
         kb.adjust(2)
         return kb.as_markup(resize_keyboard=True)
