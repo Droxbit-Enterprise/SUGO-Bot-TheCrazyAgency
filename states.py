@@ -1,20 +1,20 @@
 from aiogram.fsm.state import State, StatesGroup
 
 class RegistroStates(StatesGroup):
+    nombre = State()
     edad = State()
-    wifi = State()
-    disponibilidad = State()
-    validador_usuaria = State()
+    pais = State()
+    requisitos = State()
+    telefono = State()
+    creacion_cuenta = State()
+    envia_solicitud = State()
     
     
     
     seleccion_app = State()
     seleccion_inicial = State()
-    nombre = State()
     apellidos = State()
     documento = State()
-    pais = State()
-    telefono = State()
     tiempo = State()
     pin = State()
     whatsapp = State()

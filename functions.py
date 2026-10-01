@@ -7,6 +7,50 @@ from config import *
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+# Funcion para determinar el paso de la chica 
+def status_process(datos, validador):
+    estado = None
+    arreglo = {}
+    if datos["full_name"]:
+        texto  = datos["full_name"]
+        nombre = texto.split()[0]
+        
+    if datos["full_name"] and datos["is_adult"]==False and datos["country"]==None and datos["accepts_requirements"]==False and datos["phone"]==None:       
+        arreglo = {"full_name":texto, "nombre":nombre}
+        estado = 1
+    elif datos["full_name"] and datos["is_adult"]==True and datos["country"]==None and datos["accepts_requirements"]==False and datos["phone"]==None:
+        arreglo = {"full_name":texto, "nombre":nombre, "is_adult":True}
+        estado = 2
+    elif datos["full_name"] and datos["is_adult"]==True and datos["country"] and datos["accepts_requirements"]==False and datos["phone"]==None:        
+        arreglo = {"full_name":texto, "nombre":nombre, "is_adult":True, "country":datos["country"]} 
+        estado = 3
+    elif datos["full_name"] and datos["is_adult"]==True and datos["country"] and datos["accepts_requirements"]==True and datos["phone"]==None:
+        arreglo = {"full_name":texto, "nombre":nombre, "is_adult":True, "country":datos["country"], "accepts_requirements":datos["accepts_requirements"]}
+        estado = 4
+    elif datos["full_name"] and datos["is_adult"]==True and datos["country"] and datos["accepts_requirements"]==True and datos["phone"] and validador.get("message") == 'No Asociado': 
+        arreglo = {"streamer":datos["id"], "full_name":texto, "nombre":nombre, "is_adult":True, "country":datos["country"], "accepts_requirements":datos["accepts_requirements"], "phone":datos["phone"]}
+        estado = 5
+    elif datos["full_name"] and datos["is_adult"]==True and datos["country"] and datos["accepts_requirements"]==True and datos["phone"] and validador.get("message") == 'Asociada sin agencia aun': 
+        arreglo = {
+            "streamer":datos["id"], "full_name":texto, "nombre":nombre, "is_adult":True, "country":datos["country"], "accepts_requirements":datos["accepts_requirements"], "phone":datos["phone"],
+            "status":validador["message"], "app_user_id":validador["app_user_id"]
+        }
+        estado = 6
+    elif datos["full_name"] and datos["is_adult"]==True and datos["country"] and datos["accepts_requirements"]==True and datos["phone"] and validador.get("message") == 'Asociada y en espera de aprobacion de agencia': 
+        arreglo = {
+            "streamer":datos["id"], "full_name":texto, "nombre":nombre, "is_adult":True, "country":datos["country"], "accepts_requirements":datos["accepts_requirements"], "phone":datos["phone"],
+            "status":validador["message"], "app_user_id":validador["app_user_id"],"request_agency_sent":validador["request_agency_sent"], "accepted_by_leader":validador["accepted_by_leader"], "accepted_by_sugo":validador["accepted_by_sugo"], "inside_agency":validador["inside_agency"]
+        }
+        estado = 7
+    elif datos["full_name"] and datos["is_adult"]==True and datos["country"] and datos["accepts_requirements"]==True and datos["phone"] and validador.get("message") == 'Asociada y en Agencia': 
+        arreglo = {
+            "streamer":datos["id"], "full_name":texto, "nombre":nombre, "is_adult":True, "country":datos["country"], "accepts_requirements":datos["accepts_requirements"], "phone":datos["phone"],
+            "status":validador["message"], "app_user_id":validador["app_user_id"],"request_agency_sent":validador["request_agency_sent"], "accepted_by_leader":validador["accepted_by_leader"], "accepted_by_sugo":validador["accepted_by_sugo"], "inside_agency":validador["inside_agency"]
+        }
+        estado = 8
+        
+    return estado, arreglo
+
 # Diccionario temporal para mapear IDs internos
 user_map = {}
 COUNTRY_CHOICES = [
@@ -50,23 +94,9 @@ def obtener_apps_usuario(user):
     print("apps_asociadas", apps_asociadas, "apps_no_asociadas", apps_no_asociadas)
     return apps_asociadas, apps_no_asociadas
 
-def menu_principal(user):
-    apps_asociadas, apps_no_asociadas = obtener_apps_usuario(user)
+def menu_principal():
     kb = ReplyKeyboardBuilder()
-
-    # Si NO tiene apps asociadas → mostrar menú para asociar
-    if len(apps_asociadas) == 0:
-        for app in apps_no_asociadas:
-            kb.button(text=f"Generar 💸 en {app}")
-        kb.button(text="Tengo una duda")
-        kb.adjust(2)
-        return kb.as_markup(resize_keyboard=True)
-
-    # Si SÍ tiene apps asociadas → menú principal normal
-    for app in apps_asociadas:
-        kb.button(text=f"Gestionar {app}")
-
-    kb.button(text="Quiero generar en otras apps")
+    kb.button(text="Registrarme")
     kb.button(text="Tengo una duda")
     kb.adjust(2)
     return kb.as_markup(resize_keyboard=True)
@@ -81,6 +111,14 @@ def botones_si_no():
     kb = ReplyKeyboardBuilder()
     kb.button(text="Sí 💎")
     kb.button(text="No 💸")
+    kb.adjust(2)
+    return kb.as_markup(resize_keyboard=True)
+
+# Botones de envio de de solicitud
+def botones_envio_soli_si_no():
+    kb = ReplyKeyboardBuilder()
+    kb.button(text="Ya envie mi Solicitud a la agencia 💎")
+    kb.button(text="No he enviado la solicitud a la agencia 💸")
     kb.adjust(2)
     return kb.as_markup(resize_keyboard=True)
 

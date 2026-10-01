@@ -1,7 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
-from database import get_user
 from states import RegistroStates, MenuStates
 from functions import *
 from config import *

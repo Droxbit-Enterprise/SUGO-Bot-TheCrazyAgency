@@ -1,324 +1,766 @@
 from aiogram import Router, F
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile, InputMediaPhoto
+from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardRemove
-from database import get_user, save_user_full, update_user_field
 from states import RegistroStates, MenuStates, UsuariaRegistroStates
 from functions import *
 from config import *
+from utils.api import *
+
+
 start_router = Router()
 
-###-------- INICIOS DEL BOT --------------###
-# Comando /start
+#############-------------- INICIOS DEL BOT --------------#############
 @start_router.message(F.text == "/start")
 async def start(message: Message, state: FSMContext):
-    await state.clear() 
-    user = get_user(message.from_user.id)    
-    print("Verifica si es nueva", user)
-    # Si no existe → crearla
-    if user is None:
-        save_user_full(
-            telegram_id=message.from_user.id,
-            nombre="",
-            sugo_id="",
-            timo_id="",
-            salsa_id="",
-            contigo_id="",
-            meyo_id="",
-            kito_id="",
-            es_mayor=0,
-            tiene_wifi=0,
-            tiene_tiempo=0,
-            registrada=0,
-            inicio_sesion=0,
-            apellido="",
-        )
-        user = get_user(message.from_user.id)
-        print("Usuaria creada:", user)
-
-    # Si NO está registrada pero ya respondió edad → continuar en WIFI
-    if user[8] == 1 and user[9] == 0:
-        await typing(message, 2)
-        await message.answer(
-            "Perfecto señorita 💛 Continuemos con tu registro.\n\n"
-            "👉 ¿Tienes teléfono propio y acceso a internet estable?",
-            reply_markup=botones_si_no()
-        )
-        await state.set_state(RegistroStates.wifi)
-        return
-
-    # Si ya respondió edad + wifi → continuar en disponibilidad
-    if user[8] == 1 and user[9] == 1 and user[10] == 0:
-        await typing(message, 2)
-        await message.answer(
-            "Perfecto señorita 💛 Continuemos con tu registro.\n\n"
-            "👉 ¿Tienes disponibilidad al menos 4 o 6 horas diarias para trabajar?",
-            reply_markup=botones_si_no()
-        )
-        await state.set_state(RegistroStates.disponibilidad)
-        return
-    
-    # Si ya respondió edad + wifi + disponibilidad → continuar en validador_registro
-    if user[8] == 1 and user[9] == 1 and user[10] == 1 and user[11] == 0:    
-        await typing(message, 2)
-        # Si ya respondió nombre y apellido → continuar en documento
-        if user[1]:
-            await state.update_data(nombre=user[1])
-            if user[13]:              
-                await state.update_data(apellido=user[13])  
-                await message.answer(            
-                    "Hola, "+user[1]+" "+user[13]+" continuemos con el Registro:\n\n"
-                    "el documento y teléfono solo se usará para recuperar tu cuenta en caso de ser necesaria.\n"
-                    "Puedes revisar nuestras politicas de privacidad aqui: https://thecrazyagency.com/política-de-privacidad/\n\n"
-                    "Ahora digame tu *documento de identidad*:",
-                    reply_markup=ReplyKeyboardRemove()
+    # print("Inicio el /start
+    telegram_id = message.from_user.id
+    datos = await state.get_data()
+    streamer = await get_streamer(telegram_id)
+    app_datos = None
+    if streamer:
+        # print("La streamer ya Existe")
+        app_datos = await state.update_data(streamer=streamer.get("id"), app_name="Sugo")        
+        try:
+            validador_estado = await get_streamer_app_check(app_datos)        
+        except ValueError as e:
+            await bot.send_message(
+                GROUP_ID,
+                f"⚠️ Error desde SUGO Bot\n\n"
+                f"La chica al Iniciar la consulta no se realiza\n"
+                f"Revisar los servidores o API en get_streamer_app_check\n"
+                f"💬 {e}"
+            )
+            await message.answer(
+                "Señorita estamos teniendo problemas en nuestros servidores…💎\n"
+                "Nuestro Líder resolverá el problema y podrás continuar\n"
                 )
-                await state.set_state(UsuariaRegistroStates.doc)
-                return
+        
+    # print("----------------------------------------------------------------------------------\n\n"
+    #       "/start datos cache", datos,"\n"
+    #       "/start streamer", streamer,"\n"
+    #       "/start app_datos", validador_estado)
+    
+    # Si NO existe → iniciar 
+    if streamer.get("message") == "Nueva": # Si NO existe → iniciar  
+        print("Es nueva")
+        await typing(message, 2)
+        await message.answer(
+            "🩵 Bienvenida a *The Crazy Agency*.\n\n"
+            "Soy Susi y te acompañaré y guiaré para trabajar de forma segura, profesional y con resultados reales.\n"
+            "Aquí aprenderás todo sobre la app *SUGO*: cómo funciona, cómo generar ingresos, cómo mejorar tu rendimiento y cómo aprovechar cada herramienta de la plataforma.\n\n"
+            "Antes de comenzar, necesito saber algo importante:\n"
+            "👉 ¿Cuál es tu nombre?"
+        )
+        await state.set_state(RegistroStates.nombre)
+    
+    # Si Existe → Validar pasos 
+    else:        
+        await state.clear() 
+        app_datos = await state.update_data()
+        paso, arreglo = status_process(streamer, validador_estado)
+        # print("Paso:", paso, arreglo)
+        await state.update_data(arreglo)
+        datos = await state.get_data()
+        # Si Existe → Ya Registró Nombre → Validar si es Mayor de Edad   
+        if paso==1:    # Si Existe → Validar pasos  
+            await typing(message, 2)
+            await message.answer(
+                f"Hola señorita {datos["nombre"]} 🩵Soy Susi, que bueno verte de nuevo por acá, espero estés bien.\n\n"
+                f"Nos complace saber que quieres trabajar con nosotros.\n\n"
+                "👉 ¿Eres mayor de 18?",
+                reply_markup=botones_si_no()
+            )
+            await state.set_state(RegistroStates.edad)
             
-            await message.answer(            
-                "Hola, "+user[1]+" continuemos con el Registro:\n\n"
-                "👉 Ahora dime tu *Apellido* porfavor:",
+        # Si Existe → Ya Registró Nombre y Edad → Validar Pais  
+        elif paso==2: 
+            await typing(message, 2)
+            await message.answer(                
+                f"Hola señorita {datos["nombre"]} 🩵Soy Susi, que bueno verte de nuevo por acá, espero estés bien.\n\n"
+                "👉 ¿De qué país eres?",
+                reply_markup=botones_paises()
+            )
+            await state.set_state(RegistroStates.pais)            
+            
+        # Si Existe → Ya Registró Nombre, Edad y Pais → Validar Requisitos  
+        elif paso==3:
+            await typing(message, 2)
+            await message.answer(
+                f"Hola señorita {datos["nombre"]} 🩵Soy Susi, que bueno verte de nuevo por acá, espero estés bien.\n\n"
+                "Antes de continuar, quiero contarte los requisitos para trabajar en SUGO:\n\n"
+                "📌 *Buena conexión a internet*\n"
+                "📌 *Un dispositivo móvil en buen estado*\n"
+                "📌 *Dedicar mínimo 6 horas diarias*\n\n"
+                "Lo que generes depende de tu dedicación, constancia y las estrategias que apliques.\n\n"
+                "👉 ¿Cumples con estos requisitos?",
+                reply_markup=botones_si_no()
+            )
+            await state.set_state(RegistroStates.requisitos)
+        
+        # Si Existe → Ya Registró Nombre, Edad, Pais y Requisitos → Validar Número de Teléfono  
+        elif paso==4:
+            await typing(message, 2)
+            await message.answer(
+                f"Hola señorita {datos["nombre"]} 🩵Soy Susi, que bueno verte de nuevo por acá, espero estés bien.\n\n"
+                "👉 Para finalizar tu registro, dime tu número de Teléfono.\n"
+                "Solo 10 dígitos, sin el codigo de tu país.",
                 reply_markup=ReplyKeyboardRemove()
             )
-            await state.set_state(UsuariaRegistroStates.apellido)
-            return
-            
+            await state.set_state(RegistroStates.telefono)  
         
-        await message.answer(            
-            "Hola Regresaste señorita 💛 Continuemos con tu registro.\n"
-            "Antes de continuar, necesito validar si ya tienes una cuenta en nuestra plataforma:\n\n"
-            "👉 *thecrazyagency.com*\n\n"
-            "Por favor elige una opción:",
-            reply_markup=botones_registro_login()
-        )
-        await state.set_state(RegistroStates.validador_usuaria)
-        return
-    
-    
-    
-    # Si ya está registrada → menú principal
-    if user and user[11] == 1 and user[8] == 1 and user[9] == 1 and user[10] == 1:  # columna 'registrada'
-        await message.answer(
-            "💎 Hola nuevamente señorita.\n¿Qué deseas hacer hoy?",
-            reply_markup=menu_principal(user)
-        )
-        await state.set_state(MenuStates.menu_principal)
-        return
-    
-    # Si NO está registrada → iniciar registro
-    await typing(message, 2)
-    await bot.send_photo(
-        message.chat.id,
-        photo=URL_STATIC+"Logo+-+The+Crazy+Agency.jpg",
-        caption="💛 Bienvenida señorita a The Crazy Agency.\n\n"
-                "Somos una agencia de streamers que acompaña a chicas que desean generar ingresos desde casa de forma segura y guiada."
-    )
-    await typing(message, 2)
-    await message.answer(
-        "Señorita 💛\n"
-        "Para iniciar tu registro necesito saber:\n\n"
-        "👉 ¿eres mayor de 18?",        
-        reply_markup=botones_si_no()
-    )
-    await state.set_state(RegistroStates.edad)
+        # Si Existe → Ya Registró Nombre, Edad, Pais, Requisitos y Número de Teléfono → Validar Creacion de Cuenta
+        elif paso==5:
+            await bot.send_message(
+                GROUP_ID,
+                f"⚠️ Notificación desde SUGO Bot\n\n"
+                f"👤 @{message.from_user.username}\n"
+                f"💬 La chica {datos["nombre"]} empezo el registro nuevamente para trabajar en SUGO."
+            )
+            await typing(message, 1)
+            await message.answer(
+                f"🩵 Hola {datos["nombre"]}, bienvenida nuevamente.\n"            
+                "Señorita 🩵\n",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            await typing(message, 3)        
+            video = FSInputFile("/home/webuser/apps/sugo-bot/videos/Como-descargar-SUGO.mp4")
+            await bot.send_video(
+                message.chat.id,
+                video=video,
+                caption="Mira ahora debes descargar la app de SUGO para continuar tu proceso.\n\n"
+                        "📲 Ingresa al siguiente enlace:\n"
+                        "📄 Copias el Codigo de Invitación y cuando estes dentro lo pegas donde te indica.\n"
+                        "👉 [Descargar SUGO](https://m-share.sugo.com/s/v1WSxo)\n\n"
+                        "El enlace detecta tu dispositivo y te llevará al **App Store o Play Store** según corresponda.\n\n"
+                        "Una vez descargues la app, crea tu cuenta y envíame tu **ID de perfil** (lo verás en tu perfil dentro de la app)."
+            )
+            await typing(message, 2)        
+            photo = FSInputFile("/home/webuser/apps/sugo-bot/img/copiar-id-perfil.jpg")
+            await bot.send_photo(
+                message.chat.id,
+                photo=photo,
+                caption="Una vez descargues la app, crea tu cuenta y envíame tu **ID de perfil** (lo verás en tu perfil dentro de la app).\n"
+            )
+            await state.set_state(RegistroStates.creacion_cuenta)
+            
+        # Si Existe → Ya Registró Nombre, Edad, Pais, Requisitos, Número de Teléfono y Creacion de Cuenta → Validar Solicitud envio de agencia
+        elif paso==6:
+            await typing(message, 1)
+            await message.answer(
+                f"🩵 Hola {datos["nombre"]}, bienvenida nuevamente.\n"            
+                "Señorita dejamos el registro a medias jeje🩵\n\n"
+                "Sigamos con el registro para ingresar a nuestra agencia.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            await typing(message, 2)
+            media = [
+                InputMediaPhoto(
+                    media=FSInputFile("/home/webuser/apps/sugo-bot/img/enviar-soli-paso1.jpg"), 
+                    caption="Sigue al pie de la letra los Siguientes Pasos"
+                ),
+                InputMediaPhoto(
+                    media=FSInputFile("/home/webuser/apps/sugo-bot/img/enviar-soli-paso2.jpg")
+                ),
+                InputMediaPhoto(
+                    media=FSInputFile("/home/webuser/apps/sugo-bot/img/enviar-soli-paso3.jpg")
+                ),
+            ]
+            await bot.send_media_group(chat_id=message.chat.id, media=media)
+            await typing(message, 2)
+            await message.answer(
+                "Me confirmas cuando hayas enviado la solicitud para notificarle a nuestro Líder y te pueda aceptar en nuestra agencia 🩵",
+                reply_markup=botones_envio_soli_si_no()
+            )
+            await state.set_state(RegistroStates.envia_solicitud)
+        
+        # Si Existe → Ya Registró Nombre, Edad, Pais, Requisitos, Número de Teléfono, Creacion de Cuenta, Envio ID → Validar aceptacion Lider y Sugo
+        elif paso==7:
+            await typing(message, 1)
+            # Mensaje para la chica
+            await message.answer(
+                "Hola, señorita 🩵\n"
+                "Bueno te explico, Tu solicitud fue enviada correctamente.\n\n",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            await typing(message, 2)
+            if datos.get("accepted_by_leader") == False and datos.get("accepted_by_sugo") == False:
+                await message.answer(
+                    "Ahora debes esperar a que nuestro Líder te acepte en la agencia.\n"
+                    "Yo te notificaré automáticamente cuando eso ocurra 💎."
+                )
+            elif datos.get("accepted_by_leader") == True and datos.get("accepted_by_sugo") == False:
+                await message.answer(
+                    "Ahora debes esperar a que SUGO te acepte en la agencia.\n"
+                    "Yo te notificaré automáticamente cuando eso ocurra 💎."
+                )
+                
+            await typing(message, 2)
+            await message.answer(
+                "Mientras tanto puedes ver nuestra Playlist en YouTube\n"
+                "https://youtube.com/playlist?list=PLLjWFpoyiQijtEvt7-Kak6XyHCF7X21uG&si=-4ChuBNhW6A0Y9Co \n"
+                "Eso es Todo por el momento, Como verás soy Susi y estoy en Desarrollo espero pronto ayudarte más en SUGO\n\n"
+                "Te dejo aquí el Telegram del líder para que le escribas y le pidas más información y te añada al grupo de SUGO\n"
+                "@thecrazyagency que tengas mucho éxito en la app y que generes mucho dinero."
+            )
 
-###-------- REINICIO DEL CHAT --------------###
+        # Si Existe → Ya Registró Nombre, Edad, Pais, Requisitos, Número de Teléfono, Creacion de Cuenta, Envio ID, entro en la agencia → Menu principal
+        elif paso==8:
+            await typing(message, 1)
+            # Mensaje para la chica
+            await message.answer(
+                "Hola, señorita, ¿como te va hoy?🩵\n"
+                "Bueno te explico algo, usted ya se encuentra registrada en nuestra agencia.\n",
+                reply_markup=ReplyKeyboardRemove()
+            )
+                
+            await typing(message, 2)
+            await message.answer(
+                "Como verás soy Susi y estoy en Desarrollo espero pronto ayudarte más en SUGO"
+                "hasta aqui hemos llegado hasta el momento"
+                "Mientras tanto puedes ver nuestra Playlist en YouTube para que aprendas a usar Sugo\n"
+                "https://youtube.com/playlist?list=PLLjWFpoyiQijtEvt7-Kak6XyHCF7X21uG&si=-4ChuBNhW6A0Y9Co \n\n"                
+                "Te dejo aquí el Telegram del líder para que le escribas y le pidas más información y te añada al grupo de SUGO\n"
+                "@thecrazyagency que tengas mucho éxito en la app y que generes mucho dinero."
+            )
+            
+#############-------------- REINICIO DEL CHAT --------------############# No Terminado
 # Se ejecuta si la chica dice que es menor de edad y vuelve a responder si la misma chica escribe de nuevo
-@start_router.message(F.text.lower().in_({"hola", "buenas", "hey", "holi", "ola", "holis", "Holis", "Holi", "Ola", "Hey", "Buenas", "Hola"}))
+@start_router.message(F.text.lower().in_({"susi", "Susi", "SUSI", "hola", "buenas", "hey", "holi", "ola", "holis", "Holis", "Holi", "Ola", "Hey", "Buenas", "Hola", "Holaa", "Holaaa", "holaa", "holaaa"}))
 async def reiniciar_conversacion(message: Message, state: FSMContext):
+    telegram_id = message.from_user.id
+    # Limpiar estado para evitar conflictos
     await state.clear()
+    # Ejecutar el flujo del /start
+    await start(message, state)
+    
+    """data = await state.get_data()
+    telegram_id = message.from_user.id
+    print(data, telegram_id)
+    streamer = await get_streamer(telegram_id)
+    # Si existe → bienvenida + menú
+    if streamer and "error" not in streamer:
+        texto = streamer.get("full_name", "Streamer")
+        partes = texto.split()
+        nombre = partes[0]
+        await bot.send_message(
+            GROUP_ID,
+            f"⚠️ Notificación desde SUGO Bot\n\n"
+            f"👤 @{message.from_user.username}\n"
+            f"💬 La chica {nombre} empezo el registro nuevamente para trabajar en SUGO."
+        )     
+        await typing(message, 1)
+        await message.answer(
+            f"🩵 Hola {nombre}, bienvenida nuevamente.\n"            
+            "Señorita 🩵\n"
+        )
+        await typing(message, 3)
+        video = FSInputFile("/home/webuser/apps/sugo-bot/videos/Como-descargar-SUGO.mp4")
+        await bot.send_video(
+            message.chat.id,
+            video=video,
+            caption="Ahora debes descargar la app de SUGO para continuar tu proceso.\n\n"
+                    "📲 Ingresa al siguiente enlace:\n"
+                    "📄 Copias el Codigo de Invitación y cuando estes dentro lo pegas donde te indica.\n"
+                    "👉 [Descargar SUGO](https://m-share.sugo.com/s/v1WSxo)\n\n"
+                    "El enlace detecta tu dispositivo y te llevará al **App Store o Play Store** según corresponda.\n\n"
+        )
+        await typing(message, 2)        
+        photo = FSInputFile("/home/webuser/apps/sugo-bot/img/copiar-id-perfil.jpg")
+        await bot.send_photo(
+            message.chat.id,
+            photo=photo,
+            caption="Una vez descargues la app, crea tu cuenta y envíame tu **ID de perfil** (lo verás en tu perfil dentro de la app).\n",
+                    reply_markup=ReplyKeyboardRemove()
+        )
+        await state.set_state(RegistroStates.creacion_cuenta)
+    
     await typing(message, 2)
     await message.answer(
-        "💎 Hola señorita, bienvenida nuevamente 💛\n"
+        "💎 Hola señorita, bienvenida nuevamente 🩵\n"
         "Vamos a comenzar de nuevo.\n\n"
-        "👉 ¿eres mayor de 18?",  
-        reply_markup=botones_si_no()
+        "👉 ¿Cuál es tu nombre?"
     )
-    await state.set_state(RegistroStates.edad)
+    await state.set_state(RegistroStates.nombre)"""
 
-###-------- PREGUNTA DE EDAD --------------###
+#############-------------- REGISTRAR NOMBRE --------------############# 
+@start_router.message(RegistroStates.nombre)
+async def registrar_nombre(message: Message, state: FSMContext):
+    texto  = message.text.strip()   
+    partes = texto.split()
+    nombre = partes[0]
+    apellidos = None
+    if len(partes) == 4:
+        apellidos = " ".join(partes[2:]) 
+    else:        
+        apellidos = " ".join(partes[1:]) if len(partes) > 1 else ""
+        
+    try: 
+        telegram_id = message.from_user.id
+        await state.update_data(telegram_id=telegram_id, full_name=texto, nombre=nombre, origin_bot=ORIGIN_BOT)
+        datos = await state.get_data()
+        respuesta = await register_streamer(datos)
+        # print("\nREGISTRO Nombre:", respuesta)
+        if respuesta.get("message") == 'Registro exitoso':        
+            await typing(message, 2)
+            await message.answer(
+                f"Perfecto señorita {nombre} 🩵 espero estes bien.\n\n"
+                f"Nos complace saber que quieres trabajar con nosotros.\n\n"
+                "👉 ¿Eres mayor de 18?",
+                reply_markup=botones_si_no()
+            )
+            await state.set_state(RegistroStates.edad)
+    except ValueError as e:
+        await bot.send_message(
+            GROUP_ID,
+            f"⚠️ Error desde SUGO Bot\n\n"
+            f"La chica al registrar su Nombre no se registro correctamente\n"
+            f"Revisar los servidores o API\n"
+            f"💬 {e}"
+        )
+        await message.answer(
+            "Señorita estamos teniendo problemas en nuestros servidores…💎\n"
+            "Nuestro Líder resolverá el problema y podrás continuar con tu registro\n"
+            "Puedes dejarnos tu nombre nuevamente en 5 minutos."
+        )
+
+#############-------------- REGISTRAR EDAD --------------############# 
 @start_router.message(RegistroStates.edad)
 async def confirmar_mayor_edad(message: Message, state: FSMContext):
     texto = message.text.lower()
     if any(x in texto for x in ["si", "sí", "s", "yes"]):
-        await state.update_data(es_mayor=1)
-        update_user_field(message.from_user.id, "es_mayor", 1)
-        await typing(message, 2)
-        await message.answer(
-            "Perfecto 💎\n👉 ¿Tienes teléfono propio y acceso a internet estable?",
-            reply_markup=botones_si_no()
-        )
-        await state.set_state(RegistroStates.wifi)
+        try:
+            telegram_id = message.from_user.id 
+            respuesta = await update_streamer_fields(telegram_id, {"is_adult": True})
+            # print("\nREGISTRO Mayor de Edad:", respuesta)
+            await state.update_data(is_adult=1)       
+            if respuesta.get("message") == 'Actualización exitosa':  
+                await typing(message, 2)
+                await message.answer(
+                    "Claro señorita ahora...💎\n"
+                    "👉 ¿De qué país eres?",
+                    reply_markup=botones_paises()
+                )
+                await state.set_state(RegistroStates.pais)
+        except ValueError as e:
+            await bot.send_message(
+                GROUP_ID,
+                f"⚠️ Error desde SUGO Bot\n\n"
+                f"La chica al confirmar que es mayor de edad no se actualizó correctamente\n"
+                f"Revisar los servidores o API\n"
+                f"💬 {e}"
+            )
+            await message.answer(
+                "Señorita estamos teniendo problemas en nuestros servidores…💎\n"
+                "Nuestro Líder resolverá el problema y podrás continuar con tu registro\n"
+                "Puedes dejarnos saber si eres mayor de 18 años nombre nuevamente en 5 minutos\n"
+                "Puedes Responder si o no."
+            )
+
 
     elif any(x in texto for x in ["no", "No", "n", "not"]):
         await typing(message, 2)
-        await state.clear()
         await message.answer(
-            "Lo siento señorita 💛, por ahora no puedes continuar.\n"
+            "Lo siento señorita 🩵, por ahora no puedes continuar.\n"
             "Si deseas volver a empezar cuando seas mayor de edad, solo escribe *hola* o usa el comando /start 💎",
             reply_markup=ReplyKeyboardRemove()
         )        
         await bot.send_message(
             GROUP_ID,
-            f"⚠️ La chica es menor de edad\n"
+            f"⚠️ Notificación desde SUGO Bot\n\n"
+            f"La chica es menor de edad\n"
             f"👤 @{message.from_user.username}\n"
-            f"💬 Esta chica quiere trabajar pero es menor de edad."
+            f"💬 Esta chica quiere trabajar en SUGO pero es menor de edad."
         )
-        return
-
-    else:
-        await bot.send_message(
-            GROUP_ID,
-            f"⚠️ Respuesta no reconocida en *edad*\n"
-            f"👤 @{message.from_user.username}\n"
-            f"🆔 {message.from_user.id}\n"
-            f"💬 {message.text}"
-        )
-        await message.answer("No entendí tu respuesta señorita 💎, ¿eres mayor de 18?")
-
-###-------- PREGUNTA DE WIFI / TELÉFONO --------------###
-@start_router.message(RegistroStates.wifi)
-async def confirmar_wifi(message: Message, state: FSMContext):
-    texto = message.text.lower()        
-    if any(x in texto for x in ["si", "sí", "s", "yes"]):        
-        await state.update_data(tiene_wifi=1)
-        update_user_field(message.from_user.id, "tiene_wifi", 1)
-        await typing(message, 2)        
-        await message.answer(
-            "Perfecto 💎\n👉 ¿Tienes disponibilidad al menos 4 o 6 horas diarias para trabajar?",
-            reply_markup=botones_si_no()
-        )
-        await state.set_state(RegistroStates.disponibilidad)
-    
-    elif any(x in texto for x in ["no", "No", "n", "not"]):
-        await typing(message, 2)
         await state.clear()
-        await message.answer(
-            "Lo siento señorita 💛, necesitas un teléfono e internet estable para trabajar con nosotros, por ahora no puedes continuar.\n"
-            "Si deseas volver a empezar cuando Tengas un teléfono y conexión a internet, solo escribe *hola* o usa el comando /start 💎",
-            reply_markup=ReplyKeyboardRemove()
-        )
-        
         return
-
     else:
-        await bot.send_message(
-            GROUP_ID,
-            f"⚠️ Respuesta no reconocida en *wifi*\n"
-            f"👤 @{message.from_user.username}\n"
-            f"🆔 {message.from_user.id}\n"
-            f"💬 {message.text}"
-        )
-        await message.answer("No entendí tu respuesta señorita 💎, ¿tienes un buen teléfono e internet estable?")
-
-###-------- PREGUNTA DE DISPONIBILIDAD --------------###
-@start_router.message(RegistroStates.disponibilidad)
-async def confirmar_disponibilidad(message: Message, state: FSMContext):
-    texto = message.text.lower()    
-    if any(x in texto for x in ["si", "sí", "s", "yes"]):
-        await state.update_data(tiene_tiempo=1)
-        update_user_field(message.from_user.id, "tiene_tiempo", 1)
-        await typing(message, 2)
-        user = get_user(message.from_user.id)
-        await message.answer(
-            "Perfecto señorita 💎💸\n"
-            "Ya cumples los requisitos minimos para empezar a trabajar con *The Crazy Agency* 💛\n\n",
-            reply_markup=ReplyKeyboardRemove()           
-        )
-        if user[11] == 0: 
+        # await bot.send_message(
+        #     GROUP_ID,
+        #     f"⚠️ Respuesta no reconocida en *edad*\n"
+        #     f"👤 @{message.from_user.username}\n"
+        #     f"🆔 {message.from_user.id}\n"
+        #     f"💬 {message.text}"
+        # )
+        await message.answer("No entendí tu respuesta señorita 💎, ¿eres mayor de 18?")
+        
+#############-------------- REGISTRAR PAIS --------------############# 
+@start_router.message(RegistroStates.pais)
+async def registrar_pais(message: Message, state: FSMContext):
+    texto = message.text.strip()
+    pais_codigo = None
+    for code, label in COUNTRY_CHOICES:
+        if texto == label:
+            pais_codigo = code
+            break
+    if not pais_codigo:
+        await message.answer("Selecciona un país válido 🩵.", reply_markup=botones_paises())
+        return
+    try:
+        telegram_id = message.from_user.id 
+        respuesta = await update_streamer_fields(telegram_id, {"country": pais_codigo})
+        # print("\nREGISTRO País:", respuesta)
+        await state.update_data(country=pais_codigo)     
+        if respuesta.get("message") == 'Actualización exitosa':  
             await typing(message, 2)
             await message.answer(
-                "Antes de continuar, necesito validar si ya tienes una cuenta en nuestra plataforma:\n\n"
-                "👉 *thecrazyagency.com*\n\n"
-                "Por favor elige una opción:",
-                reply_markup=botones_registro_login()
+                "Perfecto señorita 🩵\n"
+                "Antes de continuar, quiero contarte los requisitos para trabajar en SUGO:\n\n"
+                "📌 *Buena conexión a internet*\n"
+                "📌 *Un dispositivo móvil en buen estado*\n"
+                "📌 *Dedicar mínimo 6 horas diarias*\n\n"
+                "Lo que generes depende de tu dedicación, constancia y las estrategias que apliques.\n\n"
+                "👉 ¿Cumples con estos requisitos?",
+                reply_markup=botones_si_no()
             )
-            await state.set_state(RegistroStates.validador_usuaria)
-            return
-        else:
+            await state.set_state(RegistroStates.requisitos)
+    except ValueError as e:
+        await bot.send_message(
+            GROUP_ID,
+            f"⚠️ Error desde SUGO Bot\n\n"
+            f"La chica al seleccionar su Pais, no se actualizó\n"
+            f"Revisar los servidores o API\n"
+            f"💬 {e}"
+        )
+        await message.answer(
+            "Señorita estamos teniendo problemas en nuestros servidores…💎\n"
+            "Nuestro Líder resolverá el problema y podrás continuar con tu registro\n"
+            "Puedes Elegir tu país nuevamente en 5 minutos.\n"
+        )  
+    
+#############-------------- CONFIRMAR REQUISITOS --------------############# 
+@start_router.message(RegistroStates.requisitos)
+async def confirmar_requisitos(message: Message, state: FSMContext):
+    texto = message.text.lower()
+    if any(x in texto for x in ["si", "sí", "s", "yes"]):    
+        try:
+            telegram_id = message.from_user.id 
+            respuesta = await update_streamer_fields(telegram_id, {"accepts_requirements": True})
+            # print("\nREGISTRO Requisitos:", respuesta)
+            if respuesta.get("message") == 'Actualización exitosa':  
+                await state.update_data(accepts_requirements=1)
+                await typing(message, 2)
+                await message.answer(
+                    "Perfecto señorita 🩵\n"
+                    "👉 Para finalizar tu registro, dime tu número de Teléfono.\n"
+                    "Solo 10 dígitos, sin el codigo de tu país.",
+                    reply_markup=ReplyKeyboardRemove()
+                )
+                await state.set_state(RegistroStates.telefono)
+        except ValueError as e:
+            await bot.send_message(
+                GROUP_ID,
+                f"⚠️ Error desde SUGO Bot\n\n"
+                f"La chica al aceptar los requisitos, no se actualizó\n"
+                f"Revisar los servidores o API\n"
+                f"💬 {e}"
+            )
             await message.answer(
-                "Continuemos con el menu principal:\n"
-                "¿Qué deseas hacer hoy?",
-                reply_markup=menu_principal(user)
+                "Señorita estamos teniendo problemas en nuestros servidores…💎\n"
+                "Nuestro Líder resolverá el problema y podrás continuar con tu registro\n"
+                "Puedes confirmar que cumples todos los requisitos nuevamente en 5 minutos.\n"
             )
-            await state.set_state(MenuStates.menu_principal)
-            return
-            
-            
-    elif any(x in texto for x in ["no", "No", "n", "not"]):
-        await typing(message, 3)
+
+    elif any(x in texto for x in ["no", "n", "not"]):
+        await typing(message, 2)
+        await message.answer(
+            "Entiendo señorita 🩵\n"
+            "Por ahora no puedes trabajar en SUGO.\n"
+            "Cuando cumplas los requisitos, puedes volver a escribir *hola* o usar /start."
+        )
         await state.clear()
-        await message.answer(
-            "Lo siento señorita 💛, necesitas disponibilidad para trabajar al menos unas 4 a 6 horas diarias 💸 con nosotros, por ahora necesitamos chicas para que generen bien.\n"
-            "Si deseas volver a empezar cuando Tengas disponilidad de tiempo para trabajar, solo escribe *hola* o usa el comando /start 💎",
-            reply_markup=ReplyKeyboardRemove()
-        )
-        return
-
+        return    
     else:
+        # await bot.send_message(
+        #     GROUP_ID,
+        #     f"⚠️ Respuesta no reconocida en *requisitos*\n"
+        #     f"👤 @{message.from_user.username}\n"
+        #     f"🆔 {message.from_user.id}\n"
+        #     f"💬 {message.text}"
+        # )
+        await message.answer("No entendí tu respuesta señorita 💎, ¿cumples con los requisitos?")
+    
+#############-------------- REGISTRAR TELÉFONO --------------############# 
+@start_router.message(RegistroStates.telefono)
+async def registrar_telefono(message: Message, state: FSMContext):
+    numero = message.text.strip()
+    # Validar que sean solo números
+    if not numero.isdigit():
+        await message.answer("El número debe contener solo dígitos 🩵. Intenta nuevamente.")
+        return
+    # Validar longitud exacta
+    if len(numero) != 10:
+        await message.answer("El número debe tener exactamente 10 dígitos 🩵. Intenta nuevamente.")
+        return        
+    try:
+        telegram_id = message.from_user.id 
+        respuesta = await update_streamer_fields(telegram_id, {"phone": numero})
+        # print("\nREGISTRO Número:", respuesta)
+        if respuesta.get("message") == 'Actualización exitosa': 
+            await state.update_data(phone=numero)
+            data = await state.get_data()
+            await bot.send_message(
+                GROUP_ID,
+                f"⚠️ Notificación desde SUGO Bot\n\n"
+                f"👤 @{message.from_user.username}\n"
+                f"💬 La chica {data['nombre']} empezo el registro para trabajar en SUGO."
+            )    
+            await typing(message, 3)
+            video = FSInputFile("/home/webuser/apps/sugo-bot/videos/Como-descargar-SUGO.mp4")
+            await bot.send_video(
+                message.chat.id,
+                video=video,
+                caption="Perfecto señorita 🩵\n"
+                        "Ahora debes descargar la app de SUGO para continuar tu proceso.\n\n"
+                        "📲 Ingresa al siguiente enlace:\n"
+                        "📄 Copias el Codigo de Invitación y cuando estes dentro lo pegas donde te indica.\n"
+                        "👉 [Descargar SUGO](https://m-share.sugo.com/s/v1WSxo)\n\n"                        
+                        "El enlace detecta tu dispositivo y te llevará al **App Store o Play Store** según corresponda.\n\n"
+            )
+            await typing(message, 2)        
+            photo = FSInputFile("/home/webuser/apps/sugo-bot/img/copiar-id-perfil.jpg")
+            await bot.send_photo(
+                message.chat.id,
+                photo=photo,
+                caption="Una vez descargues la app, crea tu cuenta y envíame tu **ID de perfil** (lo verás en tu perfil dentro de la app).\n",
+                        reply_markup=ReplyKeyboardRemove()
+            )
+            await state.set_state(RegistroStates.creacion_cuenta)
+
+    except ValueError as e:
         await bot.send_message(
             GROUP_ID,
-            f"⚠️ Respuesta no reconocida en *disponibilidad*\n"
-            f"👤 @{message.from_user.username}\n"
-            f"🆔 {message.from_user.id}\n"
-            f"💬 {message.text}"
+            f"⚠️ Error desde SUGO Bot\n\n"
+            f"La chica al registrar su numero de teléfono, no se actualizó\n"
+            f"Revisar los servidores o API\n"
+            f"💬 {e}"
         )
-        await message.answer("No entendí tu respuesta señorita 💎, Tienes disponibilidad al menos 4 o 6 horas diarias para trabajar?")
+        await message.answer(
+            "Señorita estamos teniendo problemas en nuestros servidores…💎\n"
+            "Nuestro Líder resolverá el problema y podrás continuar con tu registro\n"
+            "Puedes darme tu numero de teléfono nuevamente en 5 minutos.\n"
+        )
+   
+#############-------------- RECIBIR ID DE SUGO --------------#############
+@start_router.message(RegistroStates.creacion_cuenta)
+async def recibir_id_app(message: Message, state: FSMContext):
+    app_user_id = message.text.strip()
 
-###-------- VALIDA EL REGISTRO EN PLATAFORMA --------------###
-@start_router.message(RegistroStates.validador_usuaria)
-async def validador_registro(message: Message, state: FSMContext):
-    texto = message.text.lower()    
-    # --- REGISTRARME ---
-    if "registrarme" in texto:
+    if not app_user_id.isdigit():
+        await message.answer("El ID debe ser numérico 🩵. Intenta nuevamente.")
+        return
+    try:
+        datos = await state.get_data()
+        await state.update_data( app_user_id=app_user_id, app_name="Sugo", )
+        datos = await state.get_data()
+        respuesta = await register_streamer_app(datos)
+        
+        # print("\nREGISTRO ID APP:", respuesta)
         await typing(message, 2)
         await message.answer(
-            "Perfecto señorita, Vamos a crear tu cuenta en nuestra plataforma.\n\n"
-            "👉 Primero dime tu *Nombre*:",
-            reply_markup=ReplyKeyboardRemove()
+            "Vamos avanzando señorita 🩵\n"
+            "Sigamos con el registro para ingresar a nuestra agencia.\n\n"
+        )   
+        media = [
+            InputMediaPhoto(
+                media=FSInputFile("/home/webuser/apps/sugo-bot/img/enviar-soli-paso1.jpg"), 
+                caption="Sigue al pie de la letra los Siguientes Pasos"
+            ),
+            InputMediaPhoto(
+                media=FSInputFile("/home/webuser/apps/sugo-bot/img/enviar-soli-paso2.jpg")
+            ),
+            InputMediaPhoto(
+                media=FSInputFile("/home/webuser/apps/sugo-bot/img/enviar-soli-paso3.jpg")
+            ),
+        ]
+        await bot.send_media_group(chat_id=message.chat.id, media=media)
+        await typing(message, 2)
+        await message.answer(
+            "Me confirmas cuando hayas enviado la solicitud para notificarle a nuestro Líder y te pueda aceptar en nuestra agencia 🩵",
+            reply_markup=botones_envio_soli_si_no()
         )
-        await state.set_state(UsuariaRegistroStates.nombre)
-        return
+        await state.set_state(RegistroStates.envia_solicitud)
+        
+    except ValueError as e:
+        await bot.send_message(
+            GROUP_ID,
+            f"⚠️ Error desde SUGO Bot\n\n"
+            f"La chica al registrar su ID, no se actualizó\n"
+            f"Revisar los servidores o API\n"
+            f"💬 {e}"
+        )
+        await message.answer(
+            "Señorita estamos teniendo problemas en nuestros servidores…💎\n"
+            "Nuestro Líder resolverá el problema y podrás continuar con tu registro\n"
+            "Puedes darme tu ID de SUGO nuevamente en 5 minutos.\n"
+        )
+
+#############-------------- ENVÍO DE SOLICITUD --------------#############
+@start_router.message(RegistroStates.envia_solicitud)
+async def recibir_solicitud(message: Message, state: FSMContext):
+    texto = message.text.lower()
+
+    if "ya envié mi solicitud" in texto or "ya envie mi solicitud" in texto:
+        datos = await state.get_data()
+        telegram_id = message.from_user.id
+        nombre = datos.get("nombre", "La streamer")
+        app_user_id = datos.get("app_user_id")
+        try:
+            respuesta = await update_streamer_app_field(app_user_id, {"app_name":"Sugo","request_agency_sent":True})
+            # print("respuesta - update_streamer_app_field", respuesta)
+            # Notificar al grupo
+            await bot.send_message(
+                GROUP_ID,
+                f"📩 *Nueva solicitud desde SUGO Bot - Solicitud de ingreso enviada*\n\n"
+                f"👤 @{message.from_user.username}\n"
+                f"🆔 Sugo ID: `{app_user_id}`\n"
+                f"💎 {nombre} acaba de enviar su solicitud para ingresar a la agencia.\n"
+                f"⚠️ Líder, revisa en la app de SUGO para aceptarla.\n\n"
+                "Comandos: \n"
+                f"Para aceptar a la Chica: /aceptar_lider_sugo {telegram_id}\n"
+                f"Para confirmar que Sugo acepto a la chica: /aceptar_sugo {telegram_id}"
+            )
+            await typing(message, 2)
+            # Mensaje para la chica
+            await message.answer(
+                "Perfecto señorita 🩵\n"
+                "Tu solicitud fue enviada correctamente.\n\n"
+                "Ahora debes esperar a que nuestro Líder te acepte en la agencia.\n"
+                "Yo te notificaré automáticamente cuando eso ocurra 💎.",
+                reply_markup=ReplyKeyboardRemove()
+            )
+            await typing(message, 2)
+            await message.answer(
+                "Mientras tanto puedes ver nuestra Playlist en YouTube\n"
+                "https://youtube.com/playlist?list=PLLjWFpoyiQijtEvt7-Kak6XyHCF7X21uG&si=-4ChuBNhW6A0Y9Co \n"
+                "Eso es Todo por el momento, Como verás soy Susi y estoy en Desarrollo espero pronto ayudarte más en SUGO\n\n"
+                "Te dejo aquí el Telegram del líder para que le escribas y le pidas más información y te añada al grupo de SUGO\n"
+                "@thecrazyagency que tengas mucho éxito en la app y que generes mucho dinero."
+            )
             
-    # --- YA ESTOY REGISTRADA ---
-    if "ya estoy registrada" in texto:
-        await typing(message, 2)
-        await message.answer(
-            "Perfecto señorita, Vamos a validar tu cuenta.\n\n"
-            "👉 Primero dime tu *país*:",
-            reply_markup=botones_paises()
-        )
-        await state.set_state(UsuariaRegistroStates.iniciar_sesion)
+            # await message.answer(
+            #     "Mientras tanto puedes ver nuestro menu principal🩵",
+            #     reply_markup=menu_principal()
+            # )
+            # await state.set_state(MenuStates.menu_principal)
+            return
+        except ValueError as e:
+            await bot.send_message(
+                GROUP_ID,
+                f"⚠️ Error desde SUGO Bot\n\n"
+                f"La chica al confirmar que envio su formulario de ingreso, no se actualizó\n"
+                f"Revisar los servidores o API\n"
+                f"💬 {e}"
+            )
+            await message.answer(
+                "Señorita estamos teniendo problemas en nuestros servidores…💎\n"
+                "Nuestro Líder resolverá el problema y podrás continuar con tu registro\n"
+                "Puedes confirmarme nuevamente en 5 minutos.\n"
+            )
+    await message.answer("Señorita, selecciona una opción válida 🩵.")
+
+#############-------------- LÍDER ACEPTA AGENCIA --------------#############
+@start_router.message(Command("aceptar_lider_sugo"))
+async def aceptar_lider_sugo(message: Message):
+    # Solo permitir si el mensaje viene del grupo
+    if message.chat.id != GROUP_ID:
         return
 
-    else:
+    try:
+        parts = message.text.split()
+        telegram_id = int(parts[1])
+    except:
+        await message.answer("Formato incorrecto. Usa: /aceptar_lider_sugo <telegram_id>")
+        return
+    
+    try:
+        streamer = await get_streamer(telegram_id)
+        # print("respuesta - streamer", streamer)
+        validador_estado = await get_streamer_app_check({"streamer":streamer.get("id"), "app_name":"Sugo"})   
+        # print("validador_estado - streamer", validador_estado)
+        app_user_id = validador_estado.get("app_user_id") 
+        # print("app_user_id", app_user_id) 
+        respuesta = await update_streamer_app_field(app_user_id, {"app_name":"Sugo","accepted_by_leader":True})
+        # print("respuesta error", respuesta.get("error"))
+        if respuesta.get("error")==None:      
+            # Avisar a la chica
+            await bot.send_message(
+                telegram_id,
+                "Señorita 🩵\n"
+                "Nuestro Líder te ha aceptado en la agencia.\n\n"
+                "Ahora solo falta que SUGO apruebe tu cuenta.\n"
+                "Te notificaré cuando eso ocurra 💎."
+            )
+            # Avisar al grupo
+            await message.answer(
+                f"✔ La streamer `{telegram_id}` fue aceptada en la agencia.\n"
+                "Ahora solo falta que SUGO la apruebe."
+            )
+        else: 
+            await bot.send_message(
+                GROUP_ID,
+                f"⚠️ Error desde SUGO Bot\n\n"
+                f"Registro de App no encontrado para esa App\n"
+            ) 
+    except ValueError as e:
         await bot.send_message(
             GROUP_ID,
-            f"⚠️ Respuesta no reconocida en *validador_usuaria*\n"
-            f"👤 @{message.from_user.username}\n"
-            f"🆔 {message.from_user.id}\n"
-            f"💬 {message.text}"
+            f"⚠️ Error desde SUGO Bot\n\n"
+            f"Lider usted al confirmar que acepto a la chica, no se actualizó\n"
+            f"Revisar los servidores o API\n"
+            f"💬 {e}"
         )
-        await message.answer(
-            "No entendí tu respuesta señorita 💎, necesito validar si ya tienes una cuenta en nuestra plataforma?",
-            reply_markup=botones_registro_login()
+        
+#############-------------- LÍDER ACEPTA EN SUGO --------------#############
+@start_router.message(Command("aceptar_sugo"))
+async def aceptar_sugo(message: Message):
+    if message.chat.id != GROUP_ID:
+        return
+    try:
+        parts = message.text.split()
+        telegram_id = int(parts[1])
+    except:
+        await message.answer("Formato incorrecto. Usa: /aceptar_sugo <telegram_id>")
+        return
+    
+    # Obtener app_user_id desde la API
+    try:        
+        streamer = await get_streamer(telegram_id)
+        # print("respuesta - streamer", streamer)
+        validador_estado = await get_streamer_app_check({"streamer":streamer.get("id"), "app_name":"Sugo"})   
+        # print("validador_estado - streamer", validador_estado)
+        app_user_id = validador_estado.get("app_user_id") 
+        # print("app_user_id", app_user_id) 
+        respuesta = await update_streamer_app_field(app_user_id, {"app_name":"Sugo","accepted_by_sugo":True,"inside_agency":True})
+        # print("respuesta error", respuesta.get("error"))
+        if respuesta.get("error")==None:      
+             # Avisar a la chica
+            await bot.send_message(
+                telegram_id,
+                "Señorita 🩵\n"
+                "¡Felicidades! 🎉\n"
+                "Tu cuenta fue aceptada en SUGO.\n\n"
+                "Ya puedes continuar con tu proceso dentro de la agencia.\n"
+                "Yo estaré contigo en cada paso 💎."
+            )
+            # Avisar al grupo
+            await message.answer(
+                f"✔ La streamer `{telegram_id}` fue aceptada en SUGO.\n"
+                "Proceso completado."
+            )
+        
+        else: 
+            await bot.send_message(
+                GROUP_ID,
+                f"⚠️ Error desde SUGO Bot\n\n"
+                f"Registro de App no encontrado para esa App\n"
+            ) 
+    except ValueError as e:
+        await bot.send_message(
+            GROUP_ID,
+            f"⚠️ Error desde SUGO Bot\n\n"
+            f"Lider usted al confirmar que Sugo acepto a la chica, no se actualizó\n"
+            f"Revisar los servidores o API\n"
+            f"💬 {e}"
         )
-    
-    
-    
-    
-    
-    # user = get_user(message.from_user.id)    
-    # if user[11] == 0:            
-    #     await message.answer(
-    #         "Ahora cuéntame, ¿con qué aplicación deseas trabajar?  Nosotros de momento trabajamos con estas apps",
-    #         reply_markup=menu_principal(user)
-    #     )
-    #     await state.set_state(RegistroStates.menu)
-    # else:            
-    #     await message.answer(
-    #         "Ahora cuéntame, ¿con qué aplicación deseas trabajar?  Nosotros de momento trabajamos con estas apps",
-    #         reply_markup=menu_principal(user)
-    #     )
-    #     await state.set_state(RegistroStates.menu)
