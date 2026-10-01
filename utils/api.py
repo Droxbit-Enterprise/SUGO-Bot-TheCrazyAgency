@@ -121,14 +121,14 @@ async def register_streamer_app(data: dict):
                 return data
             
             return None
-        
+
 async def update_streamer_app_field(telegram_id: int, data: dict):
     async with aiohttp.ClientSession() as session:
         async with session.patch(f"{API_URL_APP}{telegram_id}/",json=data,headers=headers) as resp:
-            print("STATUS:", resp.status)
+            # print("STATUS:", resp.status)
             try:
                 data = await resp.json()
-                print("RESPUESTA API:", data)
+                # print("RESPUESTA API:", data)
             except Exception as e:
                 print("ERROR ACTUALIZAR STREAMER APP JSON:", e)
                 return {"error": str(e)}

@@ -44,7 +44,7 @@ async def start(message: Message, state: FSMContext):
     
     # Si NO existe → iniciar 
     if streamer.get("message") == "Nueva": # Si NO existe → iniciar  
-        print("Es nueva")
+        # print("Es nueva")
         await typing(message, 2)
         await message.answer(
             "🩵 Bienvenida a *The Crazy Agency*.\n\n"
@@ -125,23 +125,36 @@ async def start(message: Message, state: FSMContext):
                 reply_markup=ReplyKeyboardRemove()
             )
             await typing(message, 3)        
-            video = FSInputFile("/home/webuser/apps/sugo-bot/videos/Como-descargar-SUGO.mp4")
-            await bot.send_video(
-                message.chat.id,
-                video=video,
-                caption="Mira ahora debes descargar la app de SUGO para continuar tu proceso.\n\n"
-                        "📲 Ingresa al siguiente enlace:\n"
-                        "📄 Copias el Codigo de Invitación y cuando estes dentro lo pegas donde te indica.\n"
-                        "👉 [Descargar SUGO](https://m-share.sugo.com/s/v1WSxo)\n\n"
-                        "El enlace detecta tu dispositivo y te llevará al **App Store o Play Store** según corresponda.\n\n"
-                        "Una vez descargues la app, crea tu cuenta y envíame tu **ID de perfil** (lo verás en tu perfil dentro de la app)."
+           
+            await message.answer(
+                "Ahora debes descargar la app de SUGO para continuar tu proceso.\n\n"
+                "📲 Ingresa al siguiente enlace:\n"
+                "👉 https://m-share.sugo.com/s/v1WSxo\n\n"
+                "El enlace detecta tu dispositivo y te llevará al **App Store o Play Store** según corresponda.\n"
             )
-            await typing(message, 2)        
+            media = [
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-1.jpg"), 
+                    caption=("Copias el Codigo de Invitación MK1VKI\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-2.jpg"),
+                    caption=("Aquí eliges tu metodo para registrarte si tienes Android\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-3.jpg"),
+                    caption=("Aqui eliges tu metodo para registrarte si tienes IOS - IPhone\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-4.jpg"),
+                    caption=("Registras Tus Datos procura no usar información Real\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-5.jpg"),
+                    caption=("Confirmas que eres una chica\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-6.jpg"),
+                    caption=("Envia el Codigo de Invitación\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-7.jpg"),
+                    caption=("Pega y Vincula el Codigo de Invitación\n")),
+            ]
+            await bot.send_media_group(chat_id=message.chat.id, media=media) 
             photo = FSInputFile("/home/webuser/apps/sugo-bot/img/copiar-id-perfil.jpg")
             await bot.send_photo(
                 message.chat.id,
                 photo=photo,
-                caption="Una vez descargues la app, crea tu cuenta y envíame tu **ID de perfil** (lo verás en tu perfil dentro de la app).\n"
+                caption="Una vez Completes estos pasos envíame tu **ID de perfil** (lo verás en tu perfil dentro de la app).\n",
+                        reply_markup=ReplyKeyboardRemove()
             )
             await state.set_state(RegistroStates.creacion_cuenta)
             
@@ -504,26 +517,39 @@ async def registrar_telefono(message: Message, state: FSMContext):
                 GROUP_ID,
                 f"⚠️ Notificación desde SUGO Bot\n\n"
                 f"👤 @{message.from_user.username}\n"
-                f"💬 La chica {data['nombre']} empezo el registro para trabajar en SUGO."
+                f"🆔 Telegram ID: {telegram_id}\n"
+                f"💬 La chica {data['full_name']} empezo el registro para trabajar en SUGO."
             )    
             await typing(message, 3)
-            video = FSInputFile("/home/webuser/apps/sugo-bot/videos/Como-descargar-SUGO.mp4")
-            await bot.send_video(
-                message.chat.id,
-                video=video,
-                caption="Perfecto señorita 🩵\n"
-                        "Ahora debes descargar la app de SUGO para continuar tu proceso.\n\n"
-                        "📲 Ingresa al siguiente enlace:\n"
-                        "📄 Copias el Codigo de Invitación y cuando estes dentro lo pegas donde te indica.\n"
-                        "👉 [Descargar SUGO](https://m-share.sugo.com/s/v1WSxo)\n\n"                        
-                        "El enlace detecta tu dispositivo y te llevará al **App Store o Play Store** según corresponda.\n\n"
+            await message.answer(
+                "Perfecto señorita 🩵\n"
+                "Ahora debes descargar la app de SUGO para continuar tu proceso.\n\n"
+                "📲 Ingresa al siguiente enlace:\n"
+                "👉 https://m-share.sugo.com/s/v1WSxo\n\n"
+                "El enlace detecta tu dispositivo y te llevará al **App Store o Play Store** según corresponda.\n"
             )
-            await typing(message, 2)        
+            media = [
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-1.jpg"), 
+                    caption=("Copias el Codigo de Invitación MK1VKI\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-2.jpg"),
+                    caption=("Aquí eliges tu metodo para registrarte si tienes Android\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-3.jpg"),
+                    caption=("Aqui eliges tu metodo para registrarte si tienes IOS - IPhone\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-4.jpg"),
+                    caption=("Registras Tus Datos procura no usar información Real\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-5.jpg"),
+                    caption=("Confirmas que eres una chica\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-6.jpg"),
+                    caption=("Envia el Codigo de Invitación\n")),
+                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/img/Como-descargar-SUGO-paso-7.jpg"),
+                    caption=("Pega y Vincula el Codigo de Invitación\n")),
+            ]
+            await bot.send_media_group(chat_id=message.chat.id, media=media) 
             photo = FSInputFile("/home/webuser/apps/sugo-bot/img/copiar-id-perfil.jpg")
             await bot.send_photo(
                 message.chat.id,
                 photo=photo,
-                caption="Una vez descargues la app, crea tu cuenta y envíame tu **ID de perfil** (lo verás en tu perfil dentro de la app).\n",
+                caption="Una vez Completes estos pasos envíame tu **ID de perfil** (lo verás en tu perfil dentro de la app).\n",
                         reply_markup=ReplyKeyboardRemove()
             )
             await state.set_state(RegistroStates.creacion_cuenta)
@@ -556,7 +582,7 @@ async def recibir_id_app(message: Message, state: FSMContext):
         datos = await state.get_data()
         respuesta = await register_streamer_app(datos)
         
-        # print("\nREGISTRO ID APP:", respuesta)
+        print("\nREGISTRO ID APP:", respuesta)
         await typing(message, 2)
         await message.answer(
             "Vamos avanzando señorita 🩵\n"
@@ -638,13 +664,14 @@ async def recibir_solicitud(message: Message, state: FSMContext):
                 "Te dejo aquí el Telegram del líder para que le escribas y le pidas más información y te añada al grupo de SUGO\n"
                 "@thecrazyagency que tengas mucho éxito en la app y que generes mucho dinero."
             )
+            await state.clear()
+            return
             
             # await message.answer(
             #     "Mientras tanto puedes ver nuestro menu principal🩵",
             #     reply_markup=menu_principal()
             # )
             # await state.set_state(MenuStates.menu_principal)
-            return
         except ValueError as e:
             await bot.send_message(
                 GROUP_ID,
@@ -676,14 +703,22 @@ async def aceptar_lider_sugo(message: Message):
     
     try:
         streamer = await get_streamer(telegram_id)
-        # print("respuesta - streamer", streamer)
+        nombre = streamer.get("full_name") 
+        # print("streamer", streamer)
         validador_estado = await get_streamer_app_check({"streamer":streamer.get("id"), "app_name":"Sugo"})   
-        # print("validador_estado - streamer", validador_estado)
+        # print("validador_estado", validador_estado)
         app_user_id = validador_estado.get("app_user_id") 
         # print("app_user_id", app_user_id) 
-        respuesta = await update_streamer_app_field(app_user_id, {"app_name":"Sugo","accepted_by_leader":True})
-        # print("respuesta error", respuesta.get("error"))
-        if respuesta.get("error")==None:      
+        
+        if validador_estado.get("message")=="Asociada y en Agencia":
+            # Avisar al grupo
+            await message.answer(
+                f"✔ La streamer {nombre} con ID SUGO {app_user_id} y ID Telegram {telegram_id} ya habia sido Aceptada por Usted lider y SUGO.\n"
+                "Proceso completado."
+            )
+        elif validador_estado.get("message")=="Asociada y en espera de aprobacion de agencia" and validador_estado.get("accepted_by_leader")==False:                  
+            respuesta = await update_streamer_app_field(app_user_id, {"app_name":"Sugo","accepted_by_leader":True})
+            # print("respuesta error", respuesta.get("error"))
             # Avisar a la chica
             await bot.send_message(
                 telegram_id,
@@ -694,9 +729,12 @@ async def aceptar_lider_sugo(message: Message):
             )
             # Avisar al grupo
             await message.answer(
-                f"✔ La streamer `{telegram_id}` fue aceptada en la agencia.\n"
+                f"✔ La streamer {nombre} con ID SUGO {app_user_id} y ID Telegram {telegram_id} fue aceptada en la agencia por usted Lider.\n"
                 "Ahora solo falta que SUGO la apruebe."
             )
+        elif validador_estado.get("message")=="Asociada y en espera de aprobacion de agencia" and validador_estado.get("accepted_by_leader")==True:
+            # Avisar al grupo
+            await message.answer(f"✔ La streamer con ID SUGO {app_user_id} y ID Telegram {telegram_id} ya habia sido Aceptada por usted Lider.")
         else: 
             await bot.send_message(
                 GROUP_ID,
@@ -727,15 +765,23 @@ async def aceptar_sugo(message: Message):
     # Obtener app_user_id desde la API
     try:        
         streamer = await get_streamer(telegram_id)
-        # print("respuesta - streamer", streamer)
+        nombre = streamer.get("full_name") 
+        # print("streamer", streamer)
         validador_estado = await get_streamer_app_check({"streamer":streamer.get("id"), "app_name":"Sugo"})   
-        # print("validador_estado - streamer", validador_estado)
+        # print("validador_estado", validador_estado)
         app_user_id = validador_estado.get("app_user_id") 
         # print("app_user_id", app_user_id) 
-        respuesta = await update_streamer_app_field(app_user_id, {"app_name":"Sugo","accepted_by_sugo":True,"inside_agency":True})
-        # print("respuesta error", respuesta.get("error"))
-        if respuesta.get("error")==None:      
-             # Avisar a la chica
+        if validador_estado.get("message")=="Asociada y en Agencia":
+            # Avisar al grupo
+            await message.answer(
+                f"✔ La streamer con ID SUGO {app_user_id} y ID Telegram {telegram_id} ya habia sido Aceptada en SUGO.\n"
+                "Proceso de ingreso a la agencia completado."
+            )
+
+        elif validador_estado.get("message")=="Asociada y en espera de aprobacion de agencia" and validador_estado.get("accepted_by_sugo")==False and validador_estado.get("inside_agency")==False:                  
+            respuesta = await update_streamer_app_field(app_user_id, {"app_name":"Sugo","accepted_by_sugo":True,"inside_agency":True})
+            # print("respuesta error", respuesta.get("error"))
+            # Avisar a la chica
             await bot.send_message(
                 telegram_id,
                 "Señorita 🩵\n"
@@ -746,16 +792,17 @@ async def aceptar_sugo(message: Message):
             )
             # Avisar al grupo
             await message.answer(
-                f"✔ La streamer `{telegram_id}` fue aceptada en SUGO.\n"
-                "Proceso completado."
+                f"✔ La streamer {nombre} con ID SUGO {app_user_id} y ID Telegram {telegram_id} fue aceptada en la agencia por SUGO.\n"                
+                "Proceso de ingreso a la agencia completado."
             )
-        
+
         else: 
             await bot.send_message(
                 GROUP_ID,
                 f"⚠️ Error desde SUGO Bot\n\n"
                 f"Registro de App no encontrado para esa App\n"
-            ) 
+            )
+
     except ValueError as e:
         await bot.send_message(
             GROUP_ID,
