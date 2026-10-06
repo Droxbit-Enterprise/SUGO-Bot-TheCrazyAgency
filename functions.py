@@ -7,6 +7,22 @@ from config import *
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
+# Función para enviar mensaje a Tema SUGO 
+async def send_sugo(text: str):
+    await bot.send_message(
+        chat_id=GROUP_ID,
+        message_thread_id=TOPIC_SUGO,
+        text=text
+    )
+
+# Función para enviar mensaje a Tema SOPORTE 
+async def send_soporte(text: str):
+    await bot.send_message(
+        chat_id=GROUP_ID,
+        message_thread_id=TOPIC_SOPORTE,
+        text=f"⚠️ Error detectado en SUGO Bot\n\n{text}"
+    )
+
 # Funcion para determinar el paso de la chica 
 def status_process(datos, validador):
     estado = None
