@@ -122,7 +122,7 @@ async def start(message: Message, state: FSMContext):
                 reply_markup=ReplyKeyboardRemove()
             )
             await typing(message, 3)     
-            photo = FSInputFile("/home/webuser/apps/sugo-bot/media/img/Como-descargar-SUGO-paso-1.jpg")   
+            photo = FSInputFile(IMG_URL+"Como-descargar-SUGO-paso-1.jpg")   
             await bot.send_photo(
                 message.chat.id,
                 photo=photo,
@@ -133,27 +133,27 @@ async def start(message: Message, state: FSMContext):
             )
             await typing(message, 3) 
             media = [
-                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/media/img/Como-descargar-SUGO-paso-2.jpg"),
+                InputMediaPhoto(media=FSInputFile(IMG_URL+"Como-descargar-SUGO-paso-2.jpg"),
                     caption=("Aquí eliges tu método para registrarte si tienes Android o iOS - iPhone\n")),
-                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/media/img/Como-descargar-SUGO-paso-3.jpg")),
+                InputMediaPhoto(media=FSInputFile(IMG_URL+"Como-descargar-SUGO-paso-3.jpg")),
             ]
             await bot.send_media_group(chat_id=message.chat.id, media=media)   
             await typing(message, 3) 
             media = [
-                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/media/img/Como-descargar-SUGO-paso-4.jpg"),
+                InputMediaPhoto(media=FSInputFile(IMG_URL+"Como-descargar-SUGO-paso-4.jpg"),
                     caption=("Registras Tus Datos procura no usar tus datos reales, usa un apodo jeje y luego Confirmas que eres una chica\n")),
-                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/media/img/Como-descargar-SUGO-paso-5.jpg")),
+                InputMediaPhoto(media=FSInputFile(IMG_URL+"Como-descargar-SUGO-paso-5.jpg")),
             ]
             await bot.send_media_group(chat_id=message.chat.id, media=media) 
             await typing(message, 3) 
             media = [    
-                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/media/img/Como-descargar-SUGO-paso-6.jpg"),
+                InputMediaPhoto(media=FSInputFile(IMG_URL+"Como-descargar-SUGO-paso-6.jpg"),
                     caption=("El Código de Invitación que copiaste anteriormente lo pegas y Vinculas donde te indico\n")),
-                InputMediaPhoto(media=FSInputFile("/home/webuser/apps/sugo-bot/media/img/Como-descargar-SUGO-paso-7.jpg")),
+                InputMediaPhoto(media=FSInputFile(IMG_URL+"Como-descargar-SUGO-paso-7.jpg")),
             ]
             await bot.send_media_group(chat_id=message.chat.id, media=media) 
             await typing(message, 3) 
-            photo = FSInputFile("/home/webuser/apps/sugo-bot/media/img/copiar-id-perfil.jpg")
+            photo = FSInputFile(IMG_URL+"copiar-id-perfil.jpg")
             await bot.send_photo(
                 message.chat.id,
                 photo=photo,
@@ -174,14 +174,14 @@ async def start(message: Message, state: FSMContext):
             await typing(message, 2)
             media = [
                 InputMediaPhoto(
-                    media=FSInputFile("/home/webuser/apps/sugo-bot/media/img/enviar-soli-paso1.jpg"), 
+                    media=FSInputFile(IMG_URL+"enviar-soli-paso1.jpg"), 
                     caption="Sigue al pie de la letra los Siguientes Pasos"
                 ),
                 InputMediaPhoto(
-                    media=FSInputFile("/home/webuser/apps/sugo-bot/media/img/enviar-soli-paso2.jpg")
+                    media=FSInputFile(IMG_URL+"enviar-soli-paso2.jpg")
                 ),
                 InputMediaPhoto(
-                    media=FSInputFile("/home/webuser/apps/sugo-bot/media/img/enviar-soli-paso3.jpg")
+                    media=FSInputFile(IMG_URL+"enviar-soli-paso3.jpg")
                 ),
             ]
             await bot.send_media_group(chat_id=message.chat.id, media=media)
@@ -273,7 +273,7 @@ async def reiniciar_conversacion(message: Message, state: FSMContext):
             "Señorita 🩵\n"
         )
         await typing(message, 3)
-        video = FSInputFile("/home/webuser/apps/sugo-bot/media/videos/Como-descargar-SUGO.mp4")
+        video = FSInputFile(VIDEO_URL+"Como-descargar-SUGO.mp4")
         await bot.send_video(
             message.chat.id,
             video=video,
@@ -284,7 +284,7 @@ async def reiniciar_conversacion(message: Message, state: FSMContext):
                     "El enlace detecta tu dispositivo y te llevará al **App Store o Play Store** según corresponda.\n\n"
         )
         await typing(message, 2)        
-        photo = FSInputFile("/home/webuser/apps/sugo-bot/media/img/copiar-id-perfil.jpg")
+        photo = FSInputFile(IMG_URL+"copiar-id-perfil.jpg")
         await bot.send_photo(
             message.chat.id,
             photo=photo,
@@ -300,6 +300,7 @@ async def reiniciar_conversacion(message: Message, state: FSMContext):
         "👉 ¿Cuál es tu nombre?"
     )
     await state.set_state(RegistroStates.nombre)"""
+    
 
 #############-------------- LÍDER ACEPTA AGENCIA --------------#############
 @start_router.message(Command("aceptar_lider_sugo"))

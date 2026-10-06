@@ -12,3 +12,4 @@ BASE_URL = os.getenv("BASE_URL")
 BOT_NAME = os.getenv("BOT_NAME")
 ORIGIN_BOT = os.getenv("ORIGIN_BOT")
 IMG_URL = "/home/webuser/apps/sugo-bot/media/img/"
+VIDEO_URL = "/home/webuser/apps/sugo-bot/media/videos/"
