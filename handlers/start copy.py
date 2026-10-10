@@ -38,7 +38,7 @@ async def start(message: Message, state: FSMContext):
 
     # Si NO está registrada pero ya respondió edad → continuar en WIFI
     if user[8] == 1 and user[9] == 0:
-        await typing(message, 2)
+        await asyncio.sleep(0.2)
         await message.answer(
             "Perfecto señorita 💛 Continuemos con tu registro.\n\n"
             "👉 ¿Tienes teléfono propio y acceso a internet estable?",
@@ -49,7 +49,7 @@ async def start(message: Message, state: FSMContext):
 
     # Si ya respondió edad + wifi → continuar en disponibilidad
     if user[8] == 1 and user[9] == 1 and user[10] == 0:
-        await typing(message, 2)
+        await asyncio.sleep(0.2)
         await message.answer(
             "Perfecto señorita 💛 Continuemos con tu registro.\n\n"
             "👉 ¿Tienes disponibilidad al menos 4 o 6 horas diarias para trabajar?",
@@ -60,7 +60,7 @@ async def start(message: Message, state: FSMContext):
     
     # Si ya respondió edad + wifi + disponibilidad → continuar en validador_registro
     if user[8] == 1 and user[9] == 1 and user[10] == 1 and user[11] == 0:    
-        await typing(message, 2)
+        await asyncio.sleep(0.2)
         # Si ya respondió nombre y apellido → continuar en documento
         if user[1]:
             await state.update_data(nombre=user[1])
@@ -107,14 +107,14 @@ async def start(message: Message, state: FSMContext):
         return
     
     # Si NO está registrada → iniciar registro
-    await typing(message, 2)
+    await asyncio.sleep(0.2)
     await bot.send_photo(
         message.chat.id,
         photo=URL_STATIC+"Logo+-+The+Crazy+Agency.jpg",
         caption="💛 Bienvenida señorita a The Crazy Agency.\n\n"
                 "Somos una agencia de streamers que acompaña a chicas que desean generar ingresos desde casa de forma segura y guiada."
     )
-    await typing(message, 2)
+    await asyncio.sleep(0.2)
     await message.answer(
         "Señorita 💛\n"
         "Para iniciar tu registro necesito saber:\n\n"
@@ -128,7 +128,7 @@ async def start(message: Message, state: FSMContext):
 @start_router.message(F.text.lower().in_({"hola", "buenas", "hey", "holi", "ola", "holis", "Holis", "Holi", "Ola", "Hey", "Buenas", "Hola"}))
 async def reiniciar_conversacion(message: Message, state: FSMContext):
     await state.clear()
-    await typing(message, 2)
+    await asyncio.sleep(0.2)
     await message.answer(
         "💎 Hola señorita, bienvenida nuevamente 💛\n"
         "Vamos a comenzar de nuevo.\n\n"
@@ -144,7 +144,7 @@ async def confirmar_mayor_edad(message: Message, state: FSMContext):
     if any(x in texto for x in ["si", "sí", "s", "yes"]):
         await state.update_data(es_mayor=1)
         update_user_field(message.from_user.id, "es_mayor", 1)
-        await typing(message, 2)
+        await asyncio.sleep(0.2)
         await message.answer(
             "Perfecto 💎\n👉 ¿Tienes teléfono propio y acceso a internet estable?",
             reply_markup=botones_si_no()
@@ -152,7 +152,7 @@ async def confirmar_mayor_edad(message: Message, state: FSMContext):
         await state.set_state(RegistroStates.wifi)
 
     elif any(x in texto for x in ["no", "No", "n", "not"]):
-        await typing(message, 2)
+        await asyncio.sleep(0.2)
         await state.clear()
         await message.answer(
             "Lo siento señorita 💛, por ahora no puedes continuar.\n"
@@ -184,7 +184,7 @@ async def confirmar_wifi(message: Message, state: FSMContext):
     if any(x in texto for x in ["si", "sí", "s", "yes"]):        
         await state.update_data(tiene_wifi=1)
         update_user_field(message.from_user.id, "tiene_wifi", 1)
-        await typing(message, 2)        
+        await asyncio.sleep(0.2)        
         await message.answer(
             "Perfecto 💎\n👉 ¿Tienes disponibilidad al menos 4 o 6 horas diarias para trabajar?",
             reply_markup=botones_si_no()
@@ -192,7 +192,7 @@ async def confirmar_wifi(message: Message, state: FSMContext):
         await state.set_state(RegistroStates.disponibilidad)
     
     elif any(x in texto for x in ["no", "No", "n", "not"]):
-        await typing(message, 2)
+        await asyncio.sleep(0.2)
         await state.clear()
         await message.answer(
             "Lo siento señorita 💛, necesitas un teléfono e internet estable para trabajar con nosotros, por ahora no puedes continuar.\n"
@@ -219,7 +219,7 @@ async def confirmar_disponibilidad(message: Message, state: FSMContext):
     if any(x in texto for x in ["si", "sí", "s", "yes"]):
         await state.update_data(tiene_tiempo=1)
         update_user_field(message.from_user.id, "tiene_tiempo", 1)
-        await typing(message, 2)
+        await asyncio.sleep(0.2)
         user = get_user(message.from_user.id)
         await message.answer(
             "Perfecto señorita 💎💸\n"
@@ -227,7 +227,7 @@ async def confirmar_disponibilidad(message: Message, state: FSMContext):
             reply_markup=ReplyKeyboardRemove()           
         )
         if user[11] == 0: 
-            await typing(message, 2)
+            await asyncio.sleep(0.2)
             await message.answer(
                 "Antes de continuar, necesito validar si ya tienes una cuenta en nuestra plataforma:\n\n"
                 "👉 *thecrazyagency.com*\n\n"
@@ -272,7 +272,7 @@ async def validador_registro(message: Message, state: FSMContext):
     texto = message.text.lower()    
     # --- REGISTRARME ---
     if "registrarme" in texto:
-        await typing(message, 2)
+        await asyncio.sleep(0.2)
         await message.answer(
             "Perfecto señorita, Vamos a crear tu cuenta en nuestra plataforma.\n\n"
             "👉 Primero dime tu *Nombre*:",
@@ -283,7 +283,7 @@ async def validador_registro(message: Message, state: FSMContext):
             
     # --- YA ESTOY REGISTRADA ---
     if "ya estoy registrada" in texto:
-        await typing(message, 2)
+        await asyncio.sleep(0.2)
         await message.answer(
             "Perfecto señorita, Vamos a validar tu cuenta.\n\n"
             "👉 Primero dime tu *país*:",

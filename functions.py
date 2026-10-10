@@ -4,11 +4,8 @@ from aiogram.types import Message
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from config import *
 
-bot = Bot(token=TOKEN)
-dp = Dispatcher()
-
 # Función para enviar mensaje a Tema SUGO 
-async def send_sugo(text: str):
+async def send_sugo(bot: Bot, text: str):
     await bot.send_message(
         chat_id=GROUP_ID,
         message_thread_id=TOPIC_SUGO,
@@ -16,11 +13,18 @@ async def send_sugo(text: str):
     )
 
 # Función para enviar mensaje a Tema SOPORTE 
-async def send_soporte(text: str):
+async def send_soporte(bot: Bot, text: str):
     await bot.send_message(
         chat_id=GROUP_ID,
         message_thread_id=TOPIC_SOPORTE,
         text=f"⚠️ Error detectado en SUGO Bot\n\n{text}"
+    )
+
+# Función para Enviar mensajes a Tema SOPORTE de Errores de API
+async def report_api_error(bot, endpoint: str, error: str):
+    await send_soporte(bot,
+        f"📌 Endpoint: {endpoint}\n"
+        f"💬 Detalle: {error}"
     )
 
 # Funcion para determinar el paso de la chica 
@@ -31,7 +35,10 @@ def status_process(datos, validador):
         texto  = datos["full_name"]
         nombre = texto.split()[0]
         
-    if datos["full_name"] and datos["is_adult"]==False and datos["country"]==None and datos["accepts_requirements"]==False and datos["phone"]==None:       
+    if datos["is_under_18"] == True:
+        arreglo = {"full_name":texto, "nombre":nombre, "is_under_18":True}
+        estado = 0
+    elif datos["full_name"] and datos["is_adult"]==False and datos["country"]==None and datos["accepts_requirements"]==False and datos["phone"]==None:       
         arreglo = {"full_name":texto, "nombre":nombre}
         estado = 1
     elif datos["full_name"] and datos["is_adult"]==True and datos["country"]==None and datos["accepts_requirements"]==False and datos["phone"]==None:
@@ -110,18 +117,6 @@ def obtener_apps_usuario(user):
     print("apps_asociadas", apps_asociadas, "apps_no_asociadas", apps_no_asociadas)
     return apps_asociadas, apps_no_asociadas
 
-def menu_principal():
-    kb = ReplyKeyboardBuilder()
-    kb.button(text="Registrarme")
-    kb.button(text="Tengo una duda")
-    kb.adjust(2)
-    return kb.as_markup(resize_keyboard=True)
-    
-# Simulación de escritura
-async def typing(message: Message, seconds: int = 2):
-    await bot.send_chat_action(message.chat.id, "typing")
-    await asyncio.sleep(seconds)
-
 # Botones Sí / No
 def botones_si_no():
     kb = ReplyKeyboardBuilder()
@@ -138,13 +133,15 @@ def botones_envio_soli_si_no():
     kb.adjust(2)
     return kb.as_markup(resize_keyboard=True)
 
-def botones_registro_login():
+# Botones de antigua o nueva
+def botones_nueva_antigua():
     kb = ReplyKeyboardBuilder()
-    kb.button(text="Registrarme")
-    kb.button(text="Ya estoy Registrada")
+    kb.button(text="Soy nueva en SUGO")
+    kb.button(text="Ya tengo cuenta en SUGO")
     kb.adjust(2)
     return kb.as_markup(resize_keyboard=True)
 
+# Botones de Selección de Paises
 def botones_paises():
     kb = ReplyKeyboardBuilder()
     for code, label in COUNTRY_CHOICES:
@@ -152,8 +149,38 @@ def botones_paises():
     kb.adjust(2)
     return kb.as_markup(resize_keyboard=True)
 
-def boton_continuar():
+# Menu principal 
+def menu_principal():
     kb = ReplyKeyboardBuilder()
-    kb.button(text="Continuar")
-    kb.adjust(1)
+    kb.button(text="Perfil y verificaciones")
+    kb.button(text="Como Genero Dinero")
+    kb.button(text="Retiro De Dinero")
+    kb.button(text="Reglas de Sugo")
+    kb.button(text="¿Cómo invito a una amiga?")
+    kb.button(text="Estadisticas")
+    kb.button(text="Tengo una duda")
+    kb.adjust(2)
+    return kb.as_markup(resize_keyboard=True)
+
+# Menu Perfil y verificaciones 
+def menu_perfil_verificaciones():
+    kb = ReplyKeyboardBuilder()
+    kb.button(text="Añadir, Editar Perfil & Fotos")
+    kb.button(text="Momentos (Ver / Publicar)")
+    kb.button(text="Verificaciones & Etiquetas")
+    kb.button(text="Volver al menú")
+    kb.adjust(2)
+    return kb.as_markup(resize_keyboard=True)
+
+# Menu Como Genero Dinero
+def menu_como_generar():
+    kb = ReplyKeyboardBuilder()
+    kb.button(text="Métodos para Generar")
+    kb.button(text="Conversion Diamantes → Dólares")
+    kb.button(text="Dónde Buscar Usuarios")
+    kb.button(text="Cómo Generar (Chat / Video)")
+    kb.button(text="Tareas de Recibir Diamantes")
+    kb.button(text="Salas de Audio & Video")
+    kb.button(text="Volver al menú")
+    kb.adjust(2)
     return kb.as_markup(resize_keyboard=True)
